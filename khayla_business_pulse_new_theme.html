@@ -1,0 +1,690 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>KHAYLA Business Dashboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+<style>
+:root{--bg:#040907;--card:#0b1410;--text:#e9fff5;--muted:#86a698;--line:#1b2b23;--ac:#3df2a8;--gold:#f5b84a;--green:#3df2a8;--rose:#ff6b8a;--soft:#10201a;color-scheme:dark}
+*{box-sizing:border-box}
+html{background:var(--bg)}
+body{margin:0;color:var(--text);font:15px/1.55 "Space Grotesk",system-ui,sans-serif;background:radial-gradient(900px 480px at 70% -80px,#0f6b47aa,transparent 70%),radial-gradient(600px 400px at 0 0,#0a3a2a88,transparent 70%),linear-gradient(rgba(61,242,168,.045) 1px,transparent 1px) 0 0/48px 48px,linear-gradient(90deg,rgba(61,242,168,.045) 1px,transparent 1px) 0 0/48px 48px,var(--bg);background-attachment:fixed}
+aside{display:none}
+nav.tabs{position:fixed;left:10px;right:10px;bottom:10px;z-index:9;display:flex;background:rgba(11,20,16,.92);backdrop-filter:blur(12px);border:1px solid rgba(61,242,168,.2);border-radius:18px;padding:4px 4px calc(4px + env(safe-area-inset-bottom))}
+nav.tabs a{flex:1;text-align:center;font-size:11px;padding:7px 0;color:var(--muted);text-decoration:none;border-radius:14px}
+nav.tabs a .nav-icon{display:flex;align-items:center;justify-content:center;margin:0 auto 3px;width:30px;height:27px;color:currentColor;transition:transform .28s cubic-bezier(.2,.8,.2,1),filter .28s}
+.nav-icon svg{width:21px;height:21px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;transition:transform .3s,filter .3s}
+nav.tabs a.on{color:#04120c;background:linear-gradient(135deg,#68ffc2,var(--ac));font-weight:700;box-shadow:0 5px 18px rgba(61,242,168,.2)}
+nav.tabs a.on .nav-icon{transform:translateY(-2px) scale(1.08)}
+nav.tabs a.on .nav-icon svg{filter:drop-shadow(0 2px 3px rgba(0,0,0,.18));animation:iconPop .45s ease both}
+nav.tabs a:active .nav-icon{transform:scale(.88)}
+@keyframes iconPop{0%{transform:scale(.7) rotate(-8deg)}65%{transform:scale(1.14) rotate(3deg)}100%{transform:scale(1) rotate(0)}}
+@keyframes iconFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-2px)}}
+@media(prefers-reduced-motion:no-preference){nav.tabs a.on .nav-icon svg{animation:iconPop .45s ease both}}
+main{padding-bottom:96px}
+header{padding:26px 16px 70px}
+.hrow{max-width:1100px;margin:0 auto;display:flex;flex-wrap:wrap;gap:14px;justify-content:space-between;align-items:flex-end}
+.eyebrow{display:inline-block;font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--ac);border:1px solid rgba(61,242,168,.3);border-radius:999px;padding:3px 12px;margin-bottom:12px}
+h1{font:500 clamp(34px,6vw,56px)/1.05 "Space Grotesk",sans-serif;letter-spacing:-.03em;margin:0 0 8px}
+.lead{margin:0 0 6px;color:var(--muted);max-width:480px}
+.sub{color:var(--muted);font-size:12px}
+.btn{background:transparent;color:var(--text);border:1px solid rgba(61,242,168,.35);border-radius:999px;padding:9px 18px;cursor:pointer;font:inherit;font-size:14px}
+.btn.primary{background:var(--ac);color:#04120c;border-color:var(--ac);font-weight:700;box-shadow:0 0 26px rgba(61,242,168,.35)}
+:focus-visible{outline:2px solid var(--ac);outline-offset:2px}
+.body{max-width:1100px;margin:0 auto;padding:0 12px}
+.filters{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:-34px 0 16px;background:rgba(11,20,16,.85);backdrop-filter:blur(8px);border:1px solid rgba(61,242,168,.16);border-radius:16px;padding:10px}
+.filters.off{display:none}
+.filters.off+#page{margin-top:-34px}
+.filters button{border:1px solid rgba(61,242,168,.25);background:transparent;color:var(--text);border-radius:999px;padding:6px 14px;cursor:pointer;font:inherit;font-size:13px}
+.filters button.on{background:var(--ac);color:#04120c;border-color:var(--ac);font-weight:700}
+.filters label{font-size:13px;color:var(--muted)}
+.filters input{font:inherit;font-size:13px;padding:4px 6px;border:1px solid var(--line);border-radius:8px;background:var(--card);color:var(--text)}
+.kpis{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:14px}
+.card{background:linear-gradient(180deg,rgba(255,255,255,.045),rgba(255,255,255,.015));border:1px solid rgba(61,242,168,.13);border-radius:16px;padding:16px;backdrop-filter:blur(6px)}
+.kpi{border-left:3px solid var(--c)}
+.kpi .l{color:var(--muted);font-size:12px}
+.kpi .v{font:500 26px "Space Grotesk",sans-serif;letter-spacing:-.02em;margin:2px 0}
+.kpi .n{font-size:12px;color:var(--muted)}
+.kpi.main{background:linear-gradient(135deg,#0f6b47,#0a3a2a);border-color:rgba(61,242,168,.45);box-shadow:0 0 44px rgba(61,242,168,.16);grid-column:1/-1}
+.kpi.main .l,.kpi.main .n{color:#c8ffe6}
+h2{font-size:16px;font-weight:500;margin:0 0 2px}
+.hint{color:var(--muted);font-size:13px;margin:0 0 12px}
+.tips{display:grid;grid-template-columns:1fr;gap:8px}
+.tip{display:flex;gap:10px;padding:11px 13px;border-radius:12px;background:var(--soft);border:1px solid var(--line);font-size:14px}
+.tip i{font-style:normal;font-size:20px}
+.tip.warn{background:rgba(245,184,74,.1);border-color:rgba(245,184,74,.25)}.tip.bad{background:rgba(255,107,138,.1);border-color:rgba(255,107,138,.25)}.tip.good{background:rgba(61,242,168,.08);border-color:rgba(61,242,168,.22)}
+.grid{display:grid;grid-template-columns:1fr;gap:12px;margin:14px 0}
+.ch{position:relative;height:250px}
+.scroll{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:14px}
+th{color:var(--muted);font-weight:500;text-align:left;font-size:12px;text-transform:uppercase;letter-spacing:.05em}
+th,td{padding:9px 8px;border-bottom:1px solid var(--line);white-space:nowrap}
+.num{text-align:right}
+.bar{height:6px;border-radius:4px;background:var(--line);min-width:80px}
+.bar b{display:block;height:100%;border-radius:4px;background:var(--ac);box-shadow:0 0 10px rgba(61,242,168,.6)}
+.tag{padding:2px 10px;border-radius:999px;font-size:12px;font-weight:500}
+.t-ok{background:rgba(61,242,168,.14);color:var(--ac)}.t-low{background:rgba(245,184,74,.16);color:var(--gold)}.t-out{background:rgba(255,107,138,.16);color:var(--rose)}.t-chk{background:var(--soft);color:var(--muted)}
+.code{color:var(--muted);font-size:12px}
+.report-grid{display:grid;grid-template-columns:1fr;gap:12px;margin:14px 0}
+.report-note{padding:12px 14px;border-radius:12px;background:var(--soft);border:1px solid var(--line);color:var(--muted);font-size:13px}
+.report-note b{color:var(--text)}
+.insight-list{display:grid;grid-template-columns:1fr;gap:8px}
+.insight-row{display:flex;gap:12px;align-items:flex-start;padding:12px;border-radius:12px;background:var(--soft);border:1px solid var(--line)}
+.insight-icon{flex:0 0 34px;height:34px;border-radius:11px;display:grid;place-items:center;background:rgba(61,242,168,.12);font-size:17px}
+.insight-row small{display:block;color:var(--muted);margin-top:3px}
+.progress-track{height:8px;border-radius:99px;background:var(--line);overflow:hidden;min-width:90px}
+.progress-track span{display:block;height:100%;border-radius:99px;background:linear-gradient(90deg,var(--ac),#46c2ff)}
+.report-kpis{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+@media(min-width:900px){.report-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.report-grid .wide{grid-column:1/-1}.insight-list{grid-template-columns:repeat(2,minmax(0,1fr))}.report-kpis{grid-template-columns:repeat(4,minmax(0,1fr))}}
+
+.err{padding:28px;text-align:center}
+.gap{margin-top:14px}
+@media(min-width:900px){
+ body{display:grid;grid-template-columns:240px 1fr}
+ aside{display:block;position:sticky;top:0;height:100vh;background:rgba(4,9,7,.7);backdrop-filter:blur(10px);border-right:1px solid rgba(61,242,168,.12);padding:26px 16px}
+ .brand{font-weight:700;font-size:20px;letter-spacing:.04em;margin:0 8px 26px}
+ .brand b{color:var(--ac);text-shadow:0 0 14px var(--ac)}
+ aside a{display:flex;gap:12px;align-items:center;padding:11px 14px;border-radius:14px;color:var(--muted);text-decoration:none;margin-bottom:7px;border:1px solid transparent;transition:background .25s,border-color .25s,color .25s,transform .25s}
+ aside a .nav-icon{display:grid;place-items:center;width:34px;height:34px;border-radius:11px;background:rgba(255,255,255,.035);transition:transform .25s,background .25s,color .25s}
+ aside a .nav-icon svg{width:20px;height:20px}
+ aside a:hover{color:var(--text);transform:translateX(3px)}
+ aside a.on{color:var(--ac);background:linear-gradient(100deg,rgba(61,242,168,.13),rgba(61,242,168,.035));border-color:rgba(61,242,168,.3);box-shadow:inset 3px 0 0 var(--ac)}
+ aside a.on .nav-icon{background:rgba(61,242,168,.16);transform:scale(1.06)}
+ aside a.on .nav-icon svg{animation:iconPop .45s ease both;filter:drop-shadow(0 0 5px rgba(61,242,168,.35))}
+ nav.tabs{display:none}
+ main{padding-bottom:40px}
+ header{padding:40px 28px 84px}
+ .kpis{grid-template-columns:repeat(auto-fit,minmax(190px,1fr))}
+ .kpi.main{grid-column:auto}
+ .tips{grid-template-columns:repeat(auto-fit,minmax(280px,1fr))}
+ .grid{grid-template-columns:repeat(2,1fr)}
+ .grid .wide{grid-column:1/-1}
+ .ch{height:290px}
+ .body{padding:0 28px}
+}
+
+/* Professional header, theme and layout controls */
+:root{--header-glow:rgba(61,242,168,.16)}
+header{position:relative;isolation:isolate;overflow:hidden;padding-top:30px;padding-bottom:64px;background:linear-gradient(120deg,rgba(9,42,29,.94),rgba(7,18,14,.78) 58%,rgba(16,55,41,.82));border-bottom:1px solid rgba(61,242,168,.18)}
+header:before{content:"";position:absolute;z-index:-1;width:420px;height:420px;right:-90px;top:-270px;border-radius:50%;background:radial-gradient(circle,var(--header-glow),transparent 68%);pointer-events:none}
+header:after{content:"";position:absolute;z-index:-1;left:0;right:0;bottom:0;height:1px;background:linear-gradient(90deg,transparent,var(--ac),transparent);opacity:.5}
+.hrow{align-items:center}
+.header-copy{min-width:240px;flex:1}
+.header-actions{display:flex;align-items:center;justify-content:flex-end;gap:9px;flex-wrap:wrap}
+.header-actions .btn{display:inline-flex;align-items:center;gap:8px;min-height:42px;white-space:nowrap;transition:transform .2s,box-shadow .2s,background .2s}
+.header-actions .btn:hover{transform:translateY(-2px);box-shadow:0 8px 22px rgba(0,0,0,.2)}
+.btn .btn-ico{font-size:16px;line-height:1}
+.mode-switch{display:flex;gap:3px;padding:4px;border:1px solid rgba(61,242,168,.24);background:rgba(0,0,0,.2);border-radius:999px}
+.mode-switch .btn{border:0;padding:7px 11px;min-height:32px;font-size:12px}
+.mode-switch .btn.active{background:var(--ac);color:#04120c;font-weight:700;box-shadow:0 3px 12px rgba(61,242,168,.2)}
+.theme-btn{background:rgba(255,255,255,.055)}
+.brand{display:flex;align-items:center;gap:10px}
+.brand-mark{display:grid;place-items:center;width:38px;height:38px;border-radius:13px;background:linear-gradient(145deg,#6dffd0,#17a86e);color:#052016;font-weight:700;box-shadow:0 5px 18px rgba(61,242,168,.2)}
+.brand small{display:block;color:var(--muted);font-size:10px;letter-spacing:.13em;font-weight:500;margin-top:-3px}
+/* Light theme */
+body.light-mode{--bg:#f2f7f4;--card:#ffffff;--text:#172a21;--muted:#60766a;--line:#dce8e0;--ac:#159b67;--green:#159b67;--gold:#b7791f;--rose:#d94b70;--soft:#eaf3ed;color-scheme:light;background:radial-gradient(900px 480px at 70% -80px,#c8f3dd,transparent 70%),radial-gradient(600px 400px at 0 0,#e0f5e9,transparent 70%),linear-gradient(rgba(21,155,103,.035) 1px,transparent 1px) 0 0/48px 48px,linear-gradient(90deg,rgba(21,155,103,.035) 1px,transparent 1px) 0 0/48px 48px,var(--bg)}
+body.light-mode header{background:linear-gradient(120deg,#e1f7eb,#f5fbf7 58%,#d9f2e4);border-bottom-color:#c7e7d4}
+body.light-mode .eyebrow{color:#08794d;border-color:#a8d9bd}
+body.light-mode .card{background:linear-gradient(180deg,#fff,#f9fcfa);border-color:#dce9e0;box-shadow:0 7px 24px rgba(29,75,49,.055)}
+body.light-mode .filters{background:rgba(255,255,255,.9);border-color:#dce9e0}
+body.light-mode .filters input{background:#fff;color:var(--text);border-color:var(--line)}
+body.light-mode .filters button{border-color:#c8dfd0}
+body.light-mode .filters button.on{background:var(--ac);color:#fff}
+body.light-mode aside{background:rgba(250,255,252,.88);border-right-color:#dce9e0}
+body.light-mode nav.tabs{background:rgba(255,255,255,.94);border-color:#cde4d5}
+body.light-mode nav.tabs a.on{color:#fff;background:linear-gradient(135deg,#21b77c,#12875a)}
+body.light-mode .kpi.main{background:linear-gradient(135deg,#159b67,#087449);border-color:#159b67}
+body.light-mode .kpi.main .l,body.light-mode .kpi.main .n{color:#e4fff0}
+body.light-mode .btn{border-color:#acd5bd}
+body.light-mode .btn.primary{background:#159b67;color:#fff;border-color:#159b67}
+body.light-mode .mode-switch{background:rgba(20,70,43,.07);border-color:#cde4d5}
+body.light-mode .mode-switch .btn.active{background:#159b67;color:#fff}
+/* Explicit mobile/desktop layout selection */
+body.layout-mobile{display:block!important}
+body.layout-mobile aside{display:none!important}
+body.layout-mobile nav.tabs{display:flex!important}
+body.layout-mobile main{padding-bottom:100px!important}
+body.layout-mobile .body{padding:0 12px!important}
+body.layout-mobile .kpis{grid-template-columns:repeat(2,minmax(0,1fr))!important}
+body.layout-mobile .kpi.main{grid-column:1/-1!important}
+body.layout-mobile .tips,body.layout-mobile .grid,body.layout-mobile .report-grid{grid-template-columns:1fr!important}
+body.layout-mobile .grid .wide{grid-column:auto!important}
+body.layout-mobile header{padding:24px 14px 62px!important}
+body.layout-mobile .hrow{align-items:flex-start!important}
+body.layout-mobile .header-actions{justify-content:flex-start;width:100%}
+body.layout-mobile .header-actions .btn{font-size:12px;padding:8px 12px}
+body.layout-desktop{display:grid!important;grid-template-columns:240px minmax(0,1fr)!important}
+body.layout-desktop aside{display:block!important;position:sticky!important;top:0!important;height:100vh!important}
+body.layout-desktop nav.tabs{display:none!important}
+body.layout-desktop main{padding-bottom:40px!important}
+body.layout-desktop .body{max-width:1250px!important;padding:0 28px!important}
+body.layout-desktop header{padding:34px 28px 72px!important}
+body.layout-desktop .kpis{grid-template-columns:repeat(auto-fit,minmax(190px,1fr))!important}
+body.layout-desktop .kpi.main{grid-column:auto!important}
+body.layout-desktop .tips{grid-template-columns:repeat(auto-fit,minmax(280px,1fr))!important}
+body.layout-desktop .grid{grid-template-columns:repeat(2,minmax(0,1fr))!important}
+body.layout-desktop .grid .wide{grid-column:1/-1!important}
+@media(max-width:620px){
+ .header-actions{gap:7px}
+ .mode-switch{order:3;width:100%;justify-content:center}
+ .mode-switch .btn{flex:1;justify-content:center}
+ h1{font-size:clamp(32px,10vw,44px)}
+ .lead{font-size:13px}
+ body.layout-desktop .header-actions{width:auto}
+}
+@media(prefers-reduced-motion:no-preference){.brand-mark{animation:brandPulse 4s ease-in-out infinite}@keyframes brandPulse{0%,100%{box-shadow:0 5px 18px rgba(61,242,168,.18)}50%{box-shadow:0 5px 28px rgba(61,242,168,.4)}}}
+
+
+/* Distinct, polished header identity for every dashboard sheet */
+.header-copy{position:relative;display:grid;grid-template-columns:58px minmax(0,1fr);column-gap:14px;align-items:center;max-width:760px}
+.header-copy .eyebrow,.header-copy h1,.header-copy .lead,.header-copy .sub{grid-column:2}
+.page-mark{grid-column:1;grid-row:1 / span 4;width:58px;height:58px;border-radius:18px;display:grid;place-items:center;background:linear-gradient(145deg,var(--page-accent,#3df2a8),var(--page-accent-2,#46c2ff));box-shadow:0 10px 30px color-mix(in srgb,var(--page-accent,#3df2a8) 28%,transparent),inset 0 1px 0 #ffffff55;position:relative;overflow:hidden}
+.page-mark:after{content:"";position:absolute;inset:-40%;background:linear-gradient(110deg,transparent 35%,#ffffff55 48%,transparent 60%);transform:translateX(-80%);animation:markShine 5s ease-in-out infinite}
+.page-mark svg{width:29px;height:29px;fill:none;stroke:#062016;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round;position:relative;z-index:1}
+.header-copy .eyebrow{width:max-content;margin-bottom:5px;border-color:color-mix(in srgb,var(--page-accent,#3df2a8) 42%,transparent);color:var(--page-accent,#3df2a8);background:color-mix(in srgb,var(--page-accent,#3df2a8) 9%,transparent);font-weight:700;font-size:10px;letter-spacing:.14em}
+.header-copy h1{font-size:clamp(32px,5vw,50px);font-weight:700;letter-spacing:-.045em;text-shadow:0 5px 25px #0005}
+.header-copy .lead{font-size:14px;max-width:600px;margin:2px 0 5px;color:#c2d9ce}
+.header-copy .sub{font-size:11px;letter-spacing:.025em}
+header{background:radial-gradient(ellipse at 12% 10%,color-mix(in srgb,var(--page-accent,#3df2a8) 22%,transparent),transparent 42%),linear-gradient(118deg,#0a1711 0%,#0a2118 56%,#101c19 100%);transition:background .35s ease}
+header:before{background:radial-gradient(circle,color-mix(in srgb,var(--page-accent,#3df2a8) 26%,transparent),transparent 68%)}
+body[data-page="sales"]{--page-accent:#46c2ff;--page-accent-2:#4778ff}
+body[data-page="purchase"]{--page-accent:#f5b84a;--page-accent-2:#ff8757}
+body[data-page="capital"]{--page-accent:#a78bfa;--page-accent-2:#e879f9}
+body[data-page="expense"]{--page-accent:#ff6b8a;--page-accent-2:#ff9b62}
+body[data-page="reports"]{--page-accent:#2dd4bf;--page-accent-2:#46c2ff}
+body[data-page="overview"]{--page-accent:#3df2a8;--page-accent-2:#46c2ff}
+@keyframes markShine{0%,65%,100%{transform:translateX(-85%)}82%{transform:translateX(85%)}}
+@media(max-width:600px){.header-copy{grid-template-columns:46px minmax(0,1fr);column-gap:11px}.page-mark{width:46px;height:46px;border-radius:15px}.page-mark svg{width:24px;height:24px}.header-copy h1{font-size:clamp(28px,8vw,38px)}.header-copy .lead{font-size:12px}.header-copy .eyebrow{font-size:9px;padding:3px 8px}}
+@media(prefers-reduced-motion:reduce){.page-mark:after{animation:none}}
+
+
+/* ===== KHAYLA PREMIUM THEME UPDATE: MIDNIGHT / VIOLET / ICE BLUE ===== */
+:root{
+  --bg:#090D1B;
+  --card:#121A2D;
+  --text:#F3F5FF;
+  --muted:#9AA8C7;
+  --line:#26324D;
+  --ac:#A78BFA;
+  --gold:#FFC979;
+  --green:#4DE2C5;
+  --rose:#FF789A;
+  --soft:#18233B;
+  --header-glow:rgba(167,139,250,.22);
+  color-scheme:dark;
+}
+html{background:#090D1B}
+body{
+  background:
+    radial-gradient(850px 500px at 75% -10%,rgba(91,75,170,.32),transparent 68%),
+    radial-gradient(650px 430px at 0% 8%,rgba(31,125,160,.17),transparent 70%),
+    linear-gradient(rgba(167,139,250,.025) 1px,transparent 1px) 0 0/48px 48px,
+    linear-gradient(90deg,rgba(167,139,250,.025) 1px,transparent 1px) 0 0/48px 48px,
+    var(--bg);
+}
+header{
+  background:linear-gradient(118deg,rgba(24,31,61,.97),rgba(13,21,42,.91) 58%,rgba(24,35,65,.94));
+  border-bottom-color:rgba(167,139,250,.24);
+}
+header:after{background:linear-gradient(90deg,transparent,#A78BFA,#4DD8E8,transparent);opacity:.75}
+.eyebrow{color:#C4B5FD;border-color:rgba(167,139,250,.4);background:rgba(167,139,250,.08)}
+.btn{border-color:rgba(167,139,250,.36)}
+.btn.primary,.filters button.on,.mode-switch .btn.active{
+  background:linear-gradient(135deg,#A78BFA,#6D8CFF);
+  border-color:#A78BFA;color:#10152B;
+  box-shadow:0 5px 20px rgba(130,111,245,.25);
+}
+nav.tabs{background:rgba(15,22,42,.94);border-color:rgba(167,139,250,.24)}
+nav.tabs a.on{color:#10152B;background:linear-gradient(135deg,#C4B5FD,#7DD3FC);box-shadow:0 5px 20px rgba(167,139,250,.22)}
+aside{background:rgba(9,14,29,.82);border-right-color:rgba(167,139,250,.16)}
+aside a.on{color:#C4B5FD;background:linear-gradient(100deg,rgba(167,139,250,.16),rgba(77,216,232,.045));border-color:rgba(167,139,250,.28);box-shadow:inset 3px 0 0 #A78BFA}
+aside a.on .nav-icon{background:rgba(167,139,250,.16)}
+.card{background:linear-gradient(155deg,rgba(25,36,62,.96),rgba(17,26,46,.96));border-color:rgba(151,166,211,.16);box-shadow:0 10px 28px rgba(0,0,0,.12)}
+.kpi.main{background:linear-gradient(125deg,#4C438D,#283F72 60%,#176B7C);border-color:rgba(196,181,253,.42);box-shadow:0 12px 35px rgba(91,75,170,.2)}
+.kpi.main .l,.kpi.main .n{color:#E5E7FF}
+.tip{background:rgba(24,35,59,.86);border-color:rgba(151,166,211,.14)}
+.tip.good{background:rgba(77,226,197,.08);border-color:rgba(77,226,197,.2)}
+.tip.warn{background:rgba(255,201,121,.09);border-color:rgba(255,201,121,.2)}
+.tip.bad{background:rgba(255,120,154,.09);border-color:rgba(255,120,154,.2)}
+th,td{border-bottom-color:var(--line)}
+.bar b,.progress-track span{background:linear-gradient(90deg,#A78BFA,#4DD8E8);box-shadow:0 0 10px rgba(167,139,250,.24)}
+.t-ok{background:rgba(77,226,197,.13);color:#4DE2C5}
+.t-low{background:rgba(255,201,121,.14);color:#FFC979}
+.t-out{background:rgba(255,120,154,.14);color:#FF789A}
+.brand-mark{background:linear-gradient(145deg,#C4B5FD,#4DD8E8);color:#10152B;box-shadow:0 5px 20px rgba(167,139,250,.25)}
+.page-mark{background:linear-gradient(145deg,var(--page-accent,#A78BFA),var(--page-accent-2,#4DD8E8))}
+.page-mark svg{stroke:#11172D}
+:focus-visible{outline-color:#A78BFA}
+body.light-mode{
+  --bg:#F4F6FC;--card:#FFFFFF;--text:#202943;--muted:#697795;
+  --line:#E0E5F0;--ac:#7257D8;--green:#159D8A;--gold:#B77928;
+  --rose:#D94F79;--soft:#EEF1FA;color-scheme:light;
+  background:
+    radial-gradient(900px 480px at 75% -80px,#E4DEFF,transparent 70%),
+    radial-gradient(650px 420px at 0 0,#DDF5F5,transparent 70%),
+    linear-gradient(rgba(114,87,216,.025) 1px,transparent 1px) 0 0/48px 48px,
+    linear-gradient(90deg,rgba(114,87,216,.025) 1px,transparent 1px) 0 0/48px 48px,
+    var(--bg);
+}
+body.light-mode header{background:linear-gradient(120deg,#E9E5FF,#F8FAFF 58%,#DFF3F4);border-bottom-color:#D8DDF0}
+body.light-mode .header-copy .lead{color:#596784}
+body.light-mode .eyebrow{color:#6549C5;border-color:#C9BDF5;background:#F1EDFF}
+body.light-mode .card{background:linear-gradient(155deg,#FFFFFF,#F9FAFF);border-color:#E0E5F0;box-shadow:0 8px 25px rgba(47,57,91,.06)}
+body.light-mode .filters{background:rgba(255,255,255,.92);border-color:#E0E5F0}
+body.light-mode .filters input{background:#fff;color:var(--text);border-color:var(--line)}
+body.light-mode .filters button{border-color:#D5D9EA}
+body.light-mode .filters button.on,body.light-mode .btn.primary,body.light-mode .mode-switch .btn.active{background:linear-gradient(135deg,#7257D8,#4F82D9);color:#fff;border-color:#7257D8}
+body.light-mode aside{background:rgba(250,251,255,.92);border-right-color:#E0E5F0}
+body.light-mode nav.tabs{background:rgba(255,255,255,.95);border-color:#DCE1F0}
+body.light-mode nav.tabs a.on{color:#fff;background:linear-gradient(135deg,#7257D8,#4F82D9)}
+body.light-mode .kpi.main{background:linear-gradient(125deg,#6654BD,#4569B3 60%,#258C91);border-color:#6654BD}
+body.light-mode .kpi.main .l,body.light-mode .kpi.main .n{color:#fff}
+body.light-mode .btn{border-color:#D0D5E8}
+body.light-mode .mode-switch{background:rgba(74,85,130,.06);border-color:#DCE1F0}
+body.light-mode .tip{background:#F1F3FA;border-color:#E1E5F0}
+body.light-mode .tip.good{background:#E8F8F4;border-color:#C9EEE4}
+body.light-mode .tip.warn{background:#FFF6E8;border-color:#F5E2BD}
+body.light-mode .tip.bad{background:#FFF0F4;border-color:#F5D5E0}
+body.light-mode .t-ok{background:#E1F7F1;color:#087D69}
+body.light-mode .t-low{background:#FFF3DE;color:#986018}
+body.light-mode .t-out{background:#FDE8EF;color:#B8325B}
+@media(prefers-reduced-motion:no-preference){
+  .card{transition:transform .22s ease,box-shadow .22s ease,border-color .22s ease}
+  .card:hover{transform:translateY(-2px);box-shadow:0 15px 34px rgba(0,0,0,.16);border-color:rgba(167,139,250,.28)}
+}
+
+</style>
+</head>
+<body>
+<aside><div class="brand"><span class="brand-mark">K</span><span>KHAYLA<small>BUSINESS PULSE</small></span></div><div id="sideNav"></div></aside>
+<main>
+  <header><div class="hrow">
+    <div class="header-copy"><div class="page-mark" id="pageMark" aria-hidden="true"></div><span class="eyebrow" id="pageEyebrow">KHAYLA · BUSINESS INTELLIGENCE</span><h1 id="title">Overview</h1><p class="lead" id="pageLead">A clearer view of your sales, inventory, capital and profitability.</p><div class="sub" id="status">Loading your sheet…</div></div>
+    <div class="header-actions">
+      <div class="mode-switch" role="group" aria-label="Choose layout">
+        <button class="btn" id="mobileMode" type="button" aria-pressed="false"><span class="btn-ico">▯</span> Mobile</button>
+        <button class="btn" id="desktopMode" type="button" aria-pressed="false"><span class="btn-ico">▣</span> Desktop</button>
+      </div>
+      <button class="btn theme-btn" id="themeToggle" type="button" aria-label="Switch color theme"><span class="btn-ico" id="themeIcon">☀</span><span id="themeLabel">Light mode</span></button>
+      <button class="btn primary" id="refresh"><span class="btn-ico">↻</span> Refresh data</button>
+    </div>
+  </div></header>
+  <div class="body">
+    <div class="filters" id="filters">
+      <button data-d="0" class="on">All time</button><button data-d="7">Last 7 days</button><button data-d="14">Last 14 days</button>
+      <label>From <input type="date" id="from"></label><label>To <input type="date" id="to"></label>
+    </div>
+    <div id="page"></div>
+  </div>
+</main>
+<nav class="tabs" id="tabNav"></nav>
+
+<script>
+const SHEET_ID="18KJibHGn8-kxp_YsTu_9wbhTXNwTcvSeWQnWlEOhvgg";
+const url=t=>`https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(t)}`;
+const $=id=>document.getElementById(id);
+const inr=n=>(n<0?"-":"")+"₹"+Math.round(Math.abs(n)).toLocaleString("en-IN");
+const num=v=>parseFloat(String(v??"").replace(/,/g,""))||0;
+const css=v=>getComputedStyle(document.documentElement).getPropertyValue(v).trim();
+const fmtDay=d=>new Date(d+"T00:00").toLocaleDateString("en-IN",{day:"numeric",month:"short"});
+const sum=(a,f)=>a.reduce((s,x)=>s+f(x),0);
+const group=(a,k,v)=>{const m={};a.forEach(x=>{const key=k(x);if(key)m[key]=(m[key]||0)+v(x)});return m};
+const PAL=["#A78BFA","#4DD8E8","#FFC979","#FF789A","#7C9BFF","#4DE2C5","#B4A6FF"];
+
+function fixDate(s){ // mixed date styles in the sheet -> YYYY-MM-DD (2026)
+  if(!s)return null;
+  let [a,b]=String(s).trim().split(/[-\/]/).map(x=>parseInt(x,10));
+  if(!a||!b)return null;
+  let day=a,month=b;
+  if(a===5){day=b;month=5}
+  if(month>12||day>31)return null;
+  return `2026-${String(month).padStart(2,"0")}-${String(day).padStart(2,"0")}`;
+}
+const codeOf=s=>{const m=String(s).match(/\(?\s*(kh[a-z]\d+)\s*\)/i);return m?m[1].toLowerCase():""};
+const cleanName=s=>String(s).replace(/\(.*?\)/g,"").trim();
+function category(n){
+  if(/slit|churidar/.test(n))return"Slit churidar";
+  if(/anarkal|anarrkal/.test(n))return"Anarkali";
+  if(/salwar|ferarow/.test(n))return"Salwar";
+  if(/code ?set|codeset/.test(n))return"Code set";
+  if(/gown|kafthan|romber/.test(n))return"Gown / Kaftan / Romper";
+  if(/top|shirt|skirt|kurthi|pintrest/.test(n))return"Tops and skirts";
+  return"Other";
+}
+function etype(raw){
+  const m=String(raw).match(/^(.*?)\s*\((.*)\)/);
+  if(m&&/^other/i.test(m[1]))return"Other: "+m[2];
+  return(m?m[1]:String(raw)).trim()||"Other";
+}
+async function load(tab){
+  const r=await fetch(url(tab));
+  if(!r.ok)throw new Error(tab);
+  return Papa.parse(await r.text(),{header:true,skipEmptyLines:true,transformHeader:h=>h.trim().toLowerCase()}).data;
+}
+async function loadCap(){ // the CAPITAL tab name may have a trailing space
+  for(const n of["CAPITAL ","CAPITAL"]){try{const r=await load(n);if(r.length&&"partner name" in r[0])return r}catch(e){}}
+  return[];
+}
+
+let SALES=[],EXPS=[],PUR=[],CAP=[],BUY={},charts={},cur="overview";
+
+async function boot(){
+  $("status").textContent="Loading your sheet…";
+  try{
+    const [sale,purchase,expense,cap]=await Promise.all([load("SALE"),load("PURCHASE"),load("EXPENCE"),loadCap()]);
+    SALES=sale.map(r=>{
+      const name=(r["product name"]||"").trim().toLowerCase();
+      return{date:fixDate(r["date"]),name,code:codeOf(name),label:cleanName(name),cost:num(r["wholsale price"]),qty:num(r["quantity"])||1,rev:num(r["retail price"]),out:/out of stock/i.test(Object.values(r).join(" "))};
+    }).filter(r=>r.name&&r.date);
+    SALES.forEach(r=>{r.profit=r.rev-r.cost;r.cat=category(r.label)});
+    EXPS=expense.map(r=>({date:fixDate(r["date"]),raw:r["expence type"]||"",type:etype(r["expence type"]||""),amt:num(r["amount"])})).filter(r=>r.amt);
+    PUR=purchase.map(r=>{
+      const q=num(r["quantity"]),code=codeOf(r["product code"]||""),p=num(r["wholsale price per ps"]);
+      let v=String(r["venter"]||"").trim().toUpperCase();if(v==="MUMAI")v="MUMBAI";
+      return{date:(r["date"]||"").trim(),vendor:v,name:cleanName(r["product name"]||""),code,qty:q,total:num(r["total price"])||(code?q*p:p)};
+    }).filter(r=>r.name);
+    CAP=cap.map(r=>({n:r["partner name"],cap:num(r["capital amount"]),inv:num(r["invest amount"])})).filter(r=>r.n);
+    BUY={};
+    PUR.filter(r=>r.code).forEach(r=>{const b=BUY[r.code]=BUY[r.code]||{qty:0,total:0,name:r.name};b.qty+=r.qty;b.total+=r.total});
+    const ds=SALES.map(r=>r.date).sort();
+    $("from").min=$("to").min=ds[0];$("from").max=$("to").max=ds[ds.length-1];
+    $("status").textContent=`Synced ${new Date().toLocaleTimeString("en-IN")} · ${SALES.length} sales rows`;
+    render();
+  }catch(e){
+    console.error(e);
+    $("status").textContent="Could not load the sheet";
+    $("page").innerHTML=`<div class="card err"><b>We could not read your Google Sheet.</b><br>Open the sheet, click Share, and set General access to "Anyone with the link: Viewer". Keep the tab names SALE, PURCHASE, CAPITAL and EXPENCE. Then tap Refresh.</div>`;
+  }
+}
+
+function range(){
+  const all=SALES.map(r=>r.date).sort(),max=all[all.length-1],min=all[0];
+  let from=$("from").value||min,to=$("to").value||max;
+  const on=document.querySelector("#filters button.on");
+  if(on&&+on.dataset.d&&!$("from").value){
+    const d=new Date(max+"T00:00");d.setDate(d.getDate()-(+on.dataset.d-1));
+    from=d.toISOString().slice(0,10);
+  }
+  return[from,to];
+}
+
+// ---------- chart helpers ----------
+function mk(id,cfg){
+  if(charts[id])charts[id].destroy();
+  Chart.defaults.color=css("--muted");Chart.defaults.font.family="Space Grotesk, system-ui, sans-serif";
+  cfg.options=Object.assign({responsive:true,maintainAspectRatio:false},cfg.options||{});
+  charts[id]=new Chart(id,cfg);
+}
+const gl=()=>({color:css("--line")});
+const k=v=>"₹"+v/1000+"k";
+function dn(id,o){mk(id,{type:"doughnut",data:{labels:Object.keys(o),datasets:[{data:Object.values(o),backgroundColor:PAL,borderWidth:0}]},options:{cutout:"58%",plugins:{legend:{position:"bottom"},tooltip:{callbacks:{label:c=>`${c.label}: ${inr(c.raw)}`}}}}})}
+function hb(id,labels,data,color,f){mk(id,{type:"bar",data:{labels,datasets:[{data,backgroundColor:color,borderRadius:4}]},options:{indexAxis:"y",plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>(f||inr)(c.raw)}}},scales:{x:{grid:gl()},y:{grid:{display:false}}}}})}
+function vb(id,labels,data,color,f){mk(id,{type:"bar",data:{labels,datasets:[{data,backgroundColor:color,borderRadius:4}]},options:{plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>(f||inr)(c.raw)}}},scales:{y:{grid:gl(),ticks:{callback:k}},x:{grid:{display:false}}}}})}
+function daily(id,d){
+  mk(id,{data:{labels:d.days.map(fmtDay),datasets:[
+    {type:"line",label:"Profit",data:d.days.map(x=>d.dayProfit[x]),borderColor:"#f5b84a",backgroundColor:"#f5b84a",tension:.3,pointRadius:2,order:1},
+    {type:"bar",label:"Sales",data:d.days.map(x=>d.daySales[x]),backgroundColor:"#1f9d6b",borderRadius:4,order:2}]},
+    options:{scales:{y:{grid:gl(),ticks:{callback:k}},x:{grid:{display:false}}},plugins:{tooltip:{callbacks:{label:c=>`${c.dataset.label}: ${inr(c.raw)}`}}}}});
+}
+
+// ---------- html helpers ----------
+const K=(l,v,n,c,m)=>`<div class="card kpi ${m?"main":""}" style="--c:${c}"><div class="l">${l}</div><div class="v">${v}</div><div class="n">${n}</div></div>`;
+const C=(t,h,b,x="")=>`<div class="card ${x}"><h2>${t}</h2><p class="hint">${h}</p>${b}</div>`;
+const CH=id=>`<div class="ch"><canvas id="${id}"></canvas></div>`;
+const T=(h,rows)=>`<div class="scroll"><table><tr>${h.map(x=>`<th class="${x[1]?"num":""}">${x[0]}</th>`).join("")}</tr>${rows.map(r=>`<tr>${r.map((c,i)=>`<td class="${h[i][1]?"num":""}">${c}</td>`).join("")}</tr>`).join("")}</table></div>`;
+const tag=(t,c)=>`<span class="tag ${c}">${t}</span>`;
+
+// ---------- shared numbers ----------
+function stockRows(){
+  const sold=group(SALES,r=>r.code,r=>r.qty);
+  return Object.keys(BUY).map(c=>({c,name:BUY[c].name,bought:BUY[c].qty,sold:sold[c]||0,left:BUY[c].qty-(sold[c]||0),unit:BUY[c].total/BUY[c].qty})).sort((a,b)=>a.left-b.left);
+}
+function D(){
+  const [from,to]=range();
+  const s=SALES.filter(r=>r.date>=from&&r.date<=to),e=EXPS.filter(r=>!r.date||(r.date>=from&&r.date<=to));
+  const rev=sum(s,r=>r.rev),cost=sum(s,r=>r.cost),pcs=sum(s,r=>r.qty),exp=sum(e,r=>r.amt),gross=rev-cost;
+  const by={};
+  s.forEach(r=>{const x=r.code||r.label;const o=by[x]=by[x]||{label:r.label,code:r.code,qty:0,rev:0,profit:0};o.qty+=r.qty;o.rev+=r.rev;o.profit+=r.profit});
+  return{s,e,rev,cost,pcs,exp,gross,net:gross-exp,margin:rev?gross/rev*100:0,
+    days:[...new Set(s.map(r=>r.date))].sort(),daySales:group(s,r=>r.date,r=>r.rev),dayProfit:group(s,r=>r.date,r=>r.profit),
+    prods:Object.values(by).sort((a,b)=>b.profit-a.profit),expBy:group(e,r=>r.type,r=>r.amt),cat:group(s,r=>r.cat,r=>r.rev)};
+}
+const prodTable=d=>T([["Product"],["Pieces",1],["Sales",1],["Profit",1],["Margin",1]],d.prods.map(p=>[p.label+(p.code?` <span class="code">${p.code.toUpperCase()}</span>`:""),p.qty,inr(p.rev),`<b>${inr(p.profit)}</b>`,(p.rev?p.profit/p.rev*100:0).toFixed(0)+"%"]));
+const topChart=(id,d)=>{const t=d.prods.slice(0,8);hb(id,t.map(p=>p.label.slice(0,24)),t.map(p=>p.profit),"#3df2a8")};
+
+// ---------- pages ----------
+function pOverview(d){
+  const st=stockRows(),stockVal=sum(st.filter(x=>x.left>0),x=>x.left*x.unit);
+  const totCap=sum(CAP,x=>x.cap),totBuy=sum(PUR,x=>x.total),allRev=sum(SALES,r=>r.rev),allExp=sum(EXPS,r=>r.amt);
+  const tips=[],best=[...d.prods].sort((a,b)=>b.qty-a.qty)[0],bd=Object.entries(d.dayProfit).sort((a,b)=>b[1]-a[1])[0];
+  tips.push(["good","🏆",`<b>Best seller:</b> ${best.label} sold ${best.qty} pieces. Keep it in stock and show it first in your posts.`]);
+  tips.push(["good","📅",`<b>Best day:</b> ${fmtDay(bd[0])} made ${inr(bd[1])} profit. Repeat whatever you posted or offered that day.`]);
+  const low=st.filter(x=>x.left>=0&&x.left<=3&&x.sold>0);
+  if(low.length)tips.push(["warn","⚠️",`<b>Restock soon:</b> ${low.slice(0,4).map(x=>`${x.name} (${x.c.toUpperCase()}) ${x.left} left`).join(", ")}.`]);
+  const slow=st.filter(x=>x.left>=8&&x.sold/x.bought<0.3);
+  if(slow.length)tips.push(["warn","🐢",`<b>Slow movers:</b> ${slow.slice(0,3).map(x=>`${x.name} (${x.c.toUpperCase()}): ${x.left} unsold`).join(", ")}. Try a discount and avoid buying more.`]);
+  const te=Object.entries(d.expBy).sort((a,b)=>b[1]-a[1])[0];
+  if(te)tips.push([te[1]>d.gross*.25?"bad":"","💸",`<b>Biggest expense:</b> ${te[0]} at ${inr(te[1])}, ${(te[1]/d.gross*100).toFixed(0)}% of your dress profit.`]);
+  const lm=d.prods.filter(p=>p.qty>=5&&p.rev&&p.profit/p.rev<.2);
+  if(lm.length)tips.push(["bad","📉",`<b>Low margin:</b> ${lm.slice(0,3).map(p=>p.label).join(", ")} earns under 20% profit. Check the price.`]);
+  const bad=SALES.filter(r=>r.profit<=0||r.out).length;
+  if(bad)tips.push(["","🔎",`<b>Data check:</b> ${bad} sale rows look odd (zero or negative profit, or out of stock). Review them in your sheet.`]);
+  $("page").innerHTML=`<div class="kpis">`+
+    K("Take-home profit",inr(d.net),"After all expenses","#f5b84a",1)+K("Total sales",inr(d.rev),`${d.days.length} selling days`,"#2fd48f")+
+    K("Profit on dresses",inr(d.gross),`${d.margin.toFixed(0)}% margin`,"#3df2a8")+K("Pieces sold",d.pcs,`${inr(d.rev/d.pcs)} average`,"#46c2ff")+
+    K("Expenses",inr(d.exp),`${d.rev?(d.exp/d.rev*100).toFixed(0):0}% of sales`,"#ff6b8a")+`</div>`+
+    C("What to do next","Simple advice from your numbers.",`<div class="tips">${tips.map(t=>`<div class="tip ${t[0]}"><i>${t[1]}</i><div>${t[2]}</div></div>`).join("")}</div>`)+
+    `<div class="grid">`+C("Sales and profit each day","Bars show sales. The line shows profit.",CH("c1"),"wide")+
+    C("Top 8 products by profit","These make you the most money.",CH("c2"))+C("Sales by product type","Which kind of dress sells most.",CH("c3"))+`</div>`+
+    C("Business position (all time)","Does not change with the date filter. Money in hand is an estimate.",`<div class="kpis" style="margin:0">`+
+    K("Partner capital",inr(totCap),"Money put in","#2fd48f")+K("Total purchases",inr(totBuy),"Stock bought","#46c2ff")+
+    K("Stock on shelf",inr(stockVal),"At buying price","#f5b84a")+K("Money in hand",inr(totCap+allRev-totBuy-allExp),"Capital + sales − purchases − expenses","#3df2a8")+`</div>`);
+  daily("c1",d);topChart("c2",d);dn("c3",d.cat);
+}
+
+function pSales(d){
+  const wd=[0,0,0,0,0,0,0];d.s.forEach(r=>wd[new Date(r.date+"T00:00").getDay()]+=r.rev);
+  const recent=[...d.s].sort((a,b)=>b.date.localeCompare(a.date)).slice(0,25);
+  $("page").innerHTML=`<div class="kpis">`+K("Total sales",inr(d.rev),`${d.days.length} selling days`,"#2fd48f",1)+K("Profit on dresses",inr(d.gross),`${d.margin.toFixed(0)}% margin`,"#3df2a8")+
+    K("Pieces sold",d.pcs,"In this period","#46c2ff")+K("Average price",inr(d.rev/d.pcs),"Per piece","#f5b84a")+K("Profit per piece",inr(d.gross/d.pcs),"Before expenses","#9b8cff")+`</div>`+
+    `<div class="grid">`+C("Sales and profit each day","Bars show sales. The line shows profit.",CH("c1"),"wide")+
+    C("Top 8 products by profit","Best earners.",CH("c2"))+C("Sales by product type","Share of sales.",CH("c3"))+
+    C("Best days of the week","Gold bar is the best day.",CH("c4"))+C("Pieces by product","Most sold first.",CH("c5"))+`</div>`+
+    C("All products","Sorted by profit.",prodTable(d))+
+    C("Latest 25 sales","Most recent first.",T([["Date"],["Product"],["Qty",1],["Price",1],["Profit",1]],recent.map(r=>[fmtDay(r.date),r.label,r.qty,inr(r.rev),inr(r.profit)])),"gap");
+  daily("c1",d);topChart("c2",d);dn("c3",d.cat);
+  const mx=Math.max(...wd);
+  mk("c4",{type:"bar",data:{labels:["Sun","Mon","Tue","Wed","Thu","Fri","Sat"],datasets:[{data:wd,backgroundColor:wd.map(v=>v===mx?"#f5b84a":"#1f9d6b"),borderRadius:4}]},options:{plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>inr(c.raw)}}},scales:{y:{grid:gl(),ticks:{callback:k}},x:{grid:{display:false}}}}});
+  const q=[...d.prods].sort((a,b)=>b.qty-a.qty).slice(0,8);hb("c5",q.map(p=>p.label.slice(0,24)),q.map(p=>p.qty),"#46c2ff",n=>n+" pcs");
+}
+
+function pPurchase(){
+  const st=stockRows(),tot=sum(PUR,r=>r.total),pcs=sum(PUR,r=>r.qty),val=sum(st.filter(x=>x.left>0),x=>x.left*x.unit);
+  const byV=group(PUR,r=>r.vendor,r=>r.total),pv=group(PUR,r=>r.vendor,r=>r.qty);
+  const stt=r=>r.left<0?tag("Check sheet","t-chk"):r.left===0?tag("Sold out","t-out"):r.left<=3?tag("Low","t-low"):tag("In stock","t-ok");
+  const bp=Object.entries(group(PUR.filter(r=>r.code),r=>r.name,r=>r.qty)).sort((a,b)=>b[1]-a[1]).slice(0,8);
+  $("page").innerHTML=`<div class="kpis">`+K("Total purchases",inr(tot),"All suppliers","#46c2ff",1)+K("Pieces bought",pcs,"All suppliers","#2fd48f")+
+    K("Stock on shelf",inr(val),"At buying price","#f5b84a")+K("Suppliers",Object.keys(byV).length,"Mumbai, Calicut, Palakkad…","#3df2a8")+`</div>`+
+    `<div class="grid">`+C("Spend by supplier","Where your buying money went.",CH("c1"))+C("Most bought products","Pieces bought, coded products only.",CH("c2"))+`</div>`+
+    C("Suppliers","Total spend and pieces.",T([["Supplier"],["Pieces",1],["Spend",1]],Object.keys(byV).sort((a,b)=>byV[b]-byV[a]).map(v=>[v,pv[v],inr(byV[v])])))+
+    C("Stock check","Bought minus sold for every product code. Least stock first.",T([["Product"],["Bought",1],["Sold",1],["Left",1],["Sold so far"],["Status"]],st.map(r=>[`${r.name} <span class="code">${r.c.toUpperCase()}</span>`,r.bought,r.sold,`<b>${r.left}</b>`,`<div class="bar"><b style="width:${r.bought?Math.min(100,r.sold/r.bought*100):0}%"></b></div>`,stt(r)])),"gap")+
+    C("All purchases","Dates are shown as typed in your sheet.",T([["Date"],["Supplier"],["Product"],["Qty",1],["Total",1]],PUR.map(r=>[r.date,r.vendor,r.name+(r.code?` <span class="code">${r.code.toUpperCase()}</span>`:""),r.qty,inr(r.total)])),"gap");
+  dn("c1",byV);hb("c2",bp.map(x=>x[0].slice(0,24)),bp.map(x=>x[1]),"#2fd48f",n=>n+" pcs");
+}
+
+function pCapital(d){
+  const totCap=sum(CAP,x=>x.cap);
+  if(!CAP.length){$("page").innerHTML=`<div class="card err">No partner data found. Check that your CAPITAL tab has the columns PARTNER NAME, CAPITAL AMOUNT and INVEST AMOUNT.</div>`;return}
+  const net=sum(SALES,r=>r.profit)-sum(EXPS,r=>r.amt),totBuy=sum(PUR,r=>r.total),st=stockRows(),val=sum(st.filter(x=>x.left>0),x=>x.left*x.unit);
+  const cash=totCap+sum(SALES,r=>r.rev)-totBuy-sum(EXPS,r=>r.amt);
+  const rows=CAP.map(p=>{const sh=totCap?p.cap/totCap:0;return{...p,sh,pr:net*sh}});
+  $("page").innerHTML=`<div class="kpis">`+K("Total capital",inr(totCap),`${CAP.length} partners`,"#2fd48f",1)+K("Net profit so far",inr(net),"All time, after expenses","#3df2a8")+
+    K("Stock on shelf",inr(val),"At buying price","#f5b84a")+K("Money in hand",inr(cash),"Estimate","#46c2ff")+`</div>`+
+    `<div class="grid">`+C("Capital share","Each partner's part of the capital.",CH("c1"))+C("Capital and profit share","Money put in and profit earned by each partner.",CH("c2"))+`</div>`+
+    C("Partner share sheet","Profit is split by capital share.",T([["Partner"],["Capital",1],["Invested",1],["Share",1],["Profit share",1],["Total value",1]],rows.map(r=>[`<b>${r.n}</b>`,inr(r.cap),inr(r.inv),(r.sh*100).toFixed(1)+"%",inr(r.pr),`<b>${inr(r.inv+r.pr)}</b>`])))+
+    C("Where the capital is now","Your money is in stock, in cash, and in costs already spent.",T([["Item"],["Amount",1]],[["Capital put in",inr(totCap)],["Stock on shelf (buying price)",inr(val)],["Estimated money in hand",inr(cash)],["Expenses paid",inr(sum(EXPS,r=>r.amt))]]),"gap");
+  dn("c1",Object.fromEntries(rows.map(r=>[r.n,r.cap])));
+  mk("c2",{type:"bar",data:{labels:rows.map(r=>r.n),datasets:[{label:"Invested",data:rows.map(r=>r.inv),backgroundColor:"#1f9d6b",borderRadius:4},{label:"Profit share",data:rows.map(r=>r.pr),backgroundColor:"#f5b84a",borderRadius:4}]},options:{scales:{y:{grid:gl(),ticks:{callback:k}},x:{grid:{display:false}}},plugins:{tooltip:{callbacks:{label:c=>`${c.dataset.label}: ${inr(c.raw)}`}}}}});
+}
+
+function pExpense(d){
+  const sumT=re=>sum(d.e.filter(r=>re.test(r.type)),r=>r.amt);
+  const dayE=group(d.e.filter(r=>r.date),r=>r.date,r=>r.amt),dd=Object.keys(dayE).sort();
+  const rows=[...d.e].sort((a,b)=>(b.date||"").localeCompare(a.date||""));
+  $("page").innerHTML=`<div class="kpis">`+K("Total expenses",inr(d.exp),`${d.rev?(d.exp/d.rev*100).toFixed(0):0}% of sales`,"#ff6b8a",1)+
+    K("Delivery and post",inr(sumT(/dtdc|post|parcel/i)),"DTDC, post, parcel","#46c2ff")+K("Models",inr(sumT(/model/i)),"Model charges","#2fd48f")+
+    K("Ads and other",inr(sumT(/^other/i)),"Fuel, ads, packing, giveaway","#f5b84a")+`</div>`+
+    `<div class="grid">`+C("Where the money goes","Each type of expense.",CH("c1"))+C("Expenses each day","Tall bars are heavy spending days.",CH("c2"))+`</div>`+
+    C("All expenses","Most recent first.",T([["Date"],["Type"],["Amount",1]],rows.map(r=>[r.date?fmtDay(r.date):"",r.raw,inr(r.amt)])));
+  dn("c1",d.expBy);vb("c2",dd.map(fmtDay),dd.map(x=>dayE[x]),"#ff6b8a");
+}
+
+
+function pReports(d){
+  const monthly={};
+  d.s.forEach(r=>{
+    const key=r.date.slice(0,7);
+    const m=monthly[key]||(monthly[key]={sales:0,profit:0,qty:0,rows:0});
+    m.sales+=r.rev;m.profit+=r.profit;m.qty+=r.qty;m.rows++;
+  });
+  const months=Object.keys(monthly).sort();
+  const monthLabels=months.map(m=>new Date(m+"-01T00:00").toLocaleDateString("en-IN",{month:"short",year:"2-digit"}));
+  const monthSales=months.map(m=>monthly[m].sales);
+  const monthProfit=months.map(m=>monthly[m].profit);
+  const expenseEntries=Object.entries(d.expBy).sort((a,b)=>b[1]-a[1]);
+  const products=[...d.prods].sort((a,b)=>b.profit-a.profit);
+  const stock=stockRows();
+  const stockValue=sum(stock.filter(x=>x.left>0),x=>x.left*x.unit);
+  const soldValue=sum(stock.filter(x=>x.left>0),x=>x.left*x.unit);
+  const stockUnits=sum(stock.filter(x=>x.left>0),x=>x.left);
+  const lowStock=stock.filter(x=>x.left>=0&&x.left<=3&&x.sold>0);
+  const excessStock=stock.filter(x=>x.left>=8&&x.bought>0&&x.sold/x.bought<.3);
+  const top=products[0];
+  const lowMargin=products.filter(x=>x.qty>=3&&x.rev>0&&x.profit/x.rev<.2);
+  const expenseRatio=d.rev?d.exp/d.rev*100:0;
+  const grossMargin=d.rev?d.gross/d.rev*100:0;
+  const netMargin=d.rev?d.net/d.rev*100:0;
+  const averageSale=d.s.length?d.rev/d.s.length:0;
+  const bestMonth=months.length?months.reduce((a,b)=>monthly[a].profit>monthly[b].profit?a:b):null;
+  const worstMonth=months.length?months.reduce((a,b)=>monthly[a].profit<monthly[b].profit?a:b):null;
+  const observations=[];
+  if(top) observations.push(["🏅",`Top profit product: ${top.label}`,`${inr(top.profit)} profit from ${top.qty} pieces sold. Consider featuring it and protecting its stock.`]);
+  if(bestMonth) observations.push(["📈",`Strongest month: ${monthLabels[months.indexOf(bestMonth)]}`,`${inr(monthly[bestMonth].profit)} dress profit before expenses. Compare promotions and product mix from this month.`]);
+  if(expenseRatio>25) observations.push(["💸","Expense pressure is high",`Expenses are ${expenseRatio.toFixed(1)}% of sales. Review recurring costs and compare each expense category before increasing spend.`]);
+  else observations.push(["✅","Expense ratio is controlled",`Expenses are ${expenseRatio.toFixed(1)}% of sales in this selected period. Keep monitoring the largest categories.`]);
+  if(lowStock.length) observations.push(["📦","Restock watch",`${lowStock.length} products have 1–3 pieces left based on purchases minus recorded sales. Verify physical stock before reordering.`]);
+  if(excessStock.length) observations.push(["🐢","Slow-moving inventory",`${excessStock.length} products have at least 8 pieces left and less than 30% sold against recorded purchases. Consider bundles or targeted offers.`]);
+  if(lowMargin.length) observations.push(["⚖️","Low-margin products",`${lowMargin.length} products with at least 3 pieces sold have under 20% gross margin. Recheck wholesale cost, retail price and discounting.`]);
+  const expRows=expenseEntries.map(([name,value])=>[name,inr(value),d.exp?(value/d.exp*100).toFixed(1)+"%":"0%",`<div class="progress-track"><span style="width:${d.exp?value/d.exp*100:0}%"></span></div>`]);
+  const productRows=products.slice(0,12).map(x=>[x.label,x.qty,inr(x.rev),inr(x.profit),x.rev?(x.profit/x.rev*100).toFixed(1)+"%":"—"]);
+  const monthlyRows=months.map((m,i)=>[monthLabels[i],inr(monthly[m].sales),inr(monthly[m].profit),monthly[m].qty,monthly[m].rows]);
+  $("page").innerHTML=
+    `<div class="kpis">`+
+    K("Net operating result",inr(d.net),"Dress profit less recorded expenses","#f5b84a",1)+
+    K("Gross margin",grossMargin.toFixed(1)+"%","Before operating expenses","#3df2a8")+
+    K("Net margin",netMargin.toFixed(1)+"%","After recorded expenses","#9b8cff")+
+    K("Average sale row",inr(averageSale),"Sales value divided by rows","#46c2ff")+
+    K("Expense ratio",expenseRatio.toFixed(1)+"%","Expenses as a share of sales","#ff6b8a")+
+    `</div>`+
+    `<div class="report-grid">`+
+    C("Monthly sales vs profit","Track whether sales growth is translating into profit.",CH("r1"),"wide")+
+    C("Expense mix","Understand which categories consume the most money.",CH("r2"))+
+    C("Profit by product","Compare product contribution, not only sales volume.",CH("r3"))+
+    `</div>`+
+    C("Management insights","Action points generated from the selected date range.",`<div class="insight-list">${observations.map(x=>`<div class="insight-row"><span class="insight-icon">${x[0]}</span><div><b>${x[1]}</b><small>${x[2]}</small></div></div>`).join("")}</div>`) +
+    `<div class="report-grid">`+
+    C("Monthly performance","Sales, dress profit, pieces and number of sale rows.",T([["Month"],["Sales",1],["Dress profit",1],["Pieces",1],["Sale rows",1]],monthlyRows),"wide")+
+    C("Expense analysis","Share of total expenses by category.",T([["Expense type"],["Amount",1],["Share",1],["Weight"]],expRows))+
+    C("Product profitability","Top products ranked by gross profit before expenses.",T([["Product"],["Pieces",1],["Sales",1],["Profit",1],["Margin",1]],productRows))+
+    `</div>`+
+    C("Inventory health","Purchase quantity less recorded sales quantity; validate against physical stock.",T([["Product"],["Bought",1],["Sold",1],["Remaining",1],["Status"]],stock.map(x=>[x.name+(x.c?` <span class="code">${x.c.toUpperCase()}</span>`:""),x.bought,x.sold,`<b>${x.left}</b>`,x.left<0?tag("Check data","t-chk"):x.left===0?tag("Sold out","t-out"):x.left<=3?tag("Low stock","t-low"):tag("Available","t-ok")])),"gap")+
+    `<div class="report-note gap"><b>How to read these reports:</b> Gross profit is retail sales minus the wholesale cost recorded on each sale row. Net operating result subtracts recorded expenses. Inventory is estimated from purchase quantities minus matched product-code sales. It does not include unrecorded returns, damaged stock, transfers, taxes, owner withdrawals or payment timing.</div>`;
+  if(months.length){
+    mk("r1",{data:{labels:monthLabels,datasets:[
+      {type:"bar",label:"Sales",data:monthSales,backgroundColor:"#46c2ff",borderRadius:6,order:2},
+      {type:"line",label:"Dress profit",data:monthProfit,borderColor:"#f5b84a",backgroundColor:"#f5b84a",tension:.35,pointRadius:3,borderWidth:3,order:1}
+    ]},options:{scales:{y:{grid:gl(),ticks:{callback:k}},x:{grid:{display:false}}},plugins:{tooltip:{callbacks:{label:c=>`${c.dataset.label}: ${inr(c.raw)}`}}}}});
+  }
+  dn("r2",d.expBy);
+  const pp=products.slice(0,8);
+  hb("r3",pp.map(x=>x.label.slice(0,22)),pp.map(x=>x.profit),"#9b8cff");
+}
+
+// ---------- routing ----------
+const ICONS={
+  overview:'<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="8" height="8" rx="2"/><rect x="13" y="3" width="8" height="5" rx="2"/><rect x="13" y="10" width="8" height="11" rx="2"/><rect x="3" y="13" width="8" height="8" rx="2"/></svg>',
+  sales:'<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 8h18l-1.5 12h-15L3 8Z"/><path d="M8 9V6a4 4 0 0 1 8 0v3M9 13v.01M15 13v.01"/><path d="m9 16 2 2 4-4"/></svg>',
+  purchase:'<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m3 7 9-4 9 4-9 4-9-4Z"/><path d="M3 7v10l9 4 9-4V7M12 11v10M7.5 5l9 4"/><path d="m16 14 2 2 3-3"/></svg>',
+  capital:'<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="8" r="3"/><path d="M3 20v-1a6 6 0 0 1 12 0v1M16 5.5a3 3 0 0 1 0 5.8M18 14a5 5 0 0 1 3 4.5V20"/><path d="M17 3v4M15 5h4"/></svg>',
+  expense:'<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="15" rx="3"/><path d="M3 9h18M7 15h4M16 3v4M13 3h6"/><path d="m15 13 3 3m0-3-3 3"/></svg>',
+  reports:'<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 19V5M4 19h17"/><rect x="7" y="11" width="3" height="5" rx="1"/><rect x="13" y="7" width="3" height="9" rx="1"/><rect x="19" y="3" width="3" height="13" rx="1"/></svg>'
+};
+const PAGES={
+  overview:{t:"Overview",f:pOverview,filter:1,eyebrow:"BUSINESS SNAPSHOT",lead:"Your business at a glance — sales, profit, stock and the next best actions."},
+  sales:{t:"Sales",f:pSales,filter:1,eyebrow:"REVENUE & PERFORMANCE",lead:"Explore sales trends, product performance and the revenue driving your business."},
+  purchase:{t:"Purchase",f:pPurchase,eyebrow:"PROCUREMENT & INVENTORY",lead:"Track supplier spending, purchase volume and the stock available to sell."},
+  capital:{t:"Capital",f:pCapital,eyebrow:"PARTNER CAPITAL & POSITION",lead:"Understand partner contributions, profit shares and where business capital stands."},
+  expense:{t:"Expense",f:pExpense,filter:1,eyebrow:"COST CONTROL & SPENDING",lead:"See where money goes, identify spending patterns and keep costs under control."},
+  reports:{t:"Business Reports",f:pReports,filter:1,eyebrow:"INSIGHTS & DECISIONS",lead:"Turn your business data into clear performance reports and practical actions."}
+};
+const navHtml=Object.entries(PAGES).map(([k,p])=>`<a href="#${k}" data-p="${k}"><span class="nav-icon">${ICONS[k]}</span><span>${p.t}</span></a>`).join("");
+$("sideNav").innerHTML=navHtml;$("tabNav").innerHTML=navHtml;
+
+// User interface preferences: remember layout and color theme on this device.
+function applyLayout(mode){
+  document.body.classList.toggle("layout-mobile",mode==="mobile");
+  document.body.classList.toggle("layout-desktop",mode==="desktop");
+  $("mobileMode").classList.toggle("active",mode==="mobile");
+  $("desktopMode").classList.toggle("active",mode==="desktop");
+  $("mobileMode").setAttribute("aria-pressed",String(mode==="mobile"));
+  $("desktopMode").setAttribute("aria-pressed",String(mode==="desktop"));
+  try{localStorage.setItem("khayla-layout-mode",mode)}catch(e){}
+}
+function applyTheme(theme){
+  const light=theme==="light";
+  document.body.classList.toggle("light-mode",light);
+  $("themeIcon").textContent=light?"☾":"☀";
+  $("themeLabel").textContent=light?"Dark mode":"Light mode";
+  $("themeToggle").setAttribute("aria-label",light?"Switch to dark mode":"Switch to light mode");
+  try{localStorage.setItem("khayla-theme",theme)}catch(e){}
+  if(typeof Chart!=="undefined"){Chart.defaults.color=css("--muted");Object.values(charts).forEach(c=>{c.options.scales&&Object.values(c.options.scales).forEach(sc=>{if(sc.grid)sc.grid.color=css("--line")});c.update("none")})}
+}
+let savedLayout="mobile",savedTheme="dark";
+try{savedLayout=localStorage.getItem("khayla-layout-mode")||savedLayout;savedTheme=localStorage.getItem("khayla-theme")||savedTheme}catch(e){}
+applyLayout(savedLayout==="desktop"?"desktop":"mobile");
+applyTheme(savedTheme==="light"?"light":"dark");
+$("mobileMode").addEventListener("click",()=>applyLayout("mobile"));
+$("desktopMode").addEventListener("click",()=>applyLayout("desktop"));
+$("themeToggle").addEventListener("click",()=>applyTheme(document.body.classList.contains("light-mode")?"dark":"light"));
+
+function render(){
+  cur=PAGES[location.hash.slice(1)]?location.hash.slice(1):"overview";
+  document.querySelectorAll("[data-p]").forEach(a=>a.classList.toggle("on",a.dataset.p===cur));
+  $("title").textContent=PAGES[cur].t;
+  $("pageEyebrow").textContent="KHAYLA  /  "+PAGES[cur].eyebrow;
+  $("pageLead").textContent=PAGES[cur].lead;
+  $("pageMark").innerHTML=ICONS[cur];
+  document.body.dataset.page=cur;
+  $("filters").classList.toggle("off",!PAGES[cur].filter);
+  if(!SALES.length)return;
+  Object.values(charts).forEach(c=>c.destroy());charts={};
+  const d=D();
+  if(!d.s.length){$("page").innerHTML=`<div class="card err">No sales in these dates. Try "All time".</div>`;return}
+  PAGES[cur].f(d);
+  scrollTo(0,0);
+}
+window.addEventListener("hashchange",render);
+document.querySelectorAll("#filters button").forEach(b=>b.onclick=()=>{
+  document.querySelectorAll("#filters button").forEach(x=>x.classList.remove("on"));
+  b.classList.add("on");$("from").value="";$("to").value="";render();
+});
+["from","to"].forEach(i=>$(i).onchange=()=>{document.querySelectorAll("#filters button").forEach(x=>x.classList.remove("on"));render()});
+$("refresh").onclick=boot;
+render();boot();
+</script>
+</body>
+</html>
