@@ -313,6 +313,8 @@ body.layout-mobile .hlogo{display:block}
   background:radial-gradient(700px 460px at 50% 42%,#2a2260 0%,#12183a 48%,#080b18 100%);
   transition:opacity .7s ease,transform .9s cubic-bezier(.7,0,.3,1),visibility 0s linear .9s}
 body.light-mode #splash .sp-logo{background:linear-gradient(100deg,#C4B5FD,#7DD3FC 50%,#F5D0FE)}
+#splash{animation:spAway .6s ease 3.6s forwards}
+@keyframes spAway{to{opacity:0;visibility:hidden;pointer-events:none}}
 #splash.out{opacity:0;transform:scale(1.12);visibility:hidden;pointer-events:none}
 .sp-wrap{position:relative;width:min(78vw,460px);text-align:center}
 .sp-logo{position:relative;width:100%;background:linear-gradient(100deg,#C4B5FD,#7DD3FC 50%,#F5D0FE);clip-path:inset(0 100% 0 0);animation:spReveal 1.5s cubic-bezier(.65,0,.25,1) .45s forwards}
@@ -332,6 +334,17 @@ body.light-mode #splash .sp-logo{background:linear-gradient(100deg,#C4B5FD,#7DD3
 @keyframes spUp{to{opacity:1;transform:none}}
 @keyframes spDot{0%,100%{opacity:0;transform:translateY(0)}50%{opacity:.7;transform:translateY(-22px)}}
 @media(prefers-reduced-motion:reduce){.sp-logo{animation-duration:.01s;animation-delay:0s}.sp-logo:after,.sp-needle,.sp-dot{display:none}.sp-thread path,.sp-tag,.sp-skip{animation-duration:.01s;animation-delay:0s}.sp-glow{animation-duration:.01s}}
+.dl{font-size:12px;font-weight:700;color:var(--muted)}.dl.up{color:#4DE2C5}.dl.dn{color:#FF789A}
+.kpi.main .dl.up{color:#9DFFE8}.kpi.main .dl.dn{color:#FFC1D0}
+.goalrow,.toolbar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:12px}
+.goalrow label{font-size:13px;color:var(--muted)}
+.goalrow input,.toolbar input,.toolbar select{font:inherit;font-size:14px;padding:8px 12px;border:1px solid var(--line);border-radius:12px;background:var(--card);color:var(--text)}
+.toolbar input{flex:1;min-width:160px}
+.goalinfo{margin:4px 0 8px;font-size:15px}
+.progress-track.big{height:14px}
+.filters select{font:inherit;font-size:13px;padding:5px 10px;border:1px solid var(--line);border-radius:999px;background:var(--card);color:var(--text);max-width:100%}
+.filters .reset{border-color:rgba(255,120,154,.4);color:var(--rose)}
+body.light-mode .filters select{background:#fff;border-color:var(--line)}
 </style>
 </head>
 <body>
@@ -344,8 +357,9 @@ body.light-mode #splash .sp-logo{background:linear-gradient(100deg,#C4B5FD,#7DD3
     <svg class="sp-thread" viewBox="0 0 400 46" preserveAspectRatio="none" aria-hidden="true"><defs><linearGradient id="spg" x1="0" x2="1"><stop offset="0" stop-color="#A78BFA" stop-opacity="0"/><stop offset=".5" stop-color="#7DD3FC"/><stop offset="1" stop-color="#F5D0FE" stop-opacity="0"/></linearGradient></defs><path pathLength="1" d="M0 24 C 50 2, 90 2, 130 24 S 210 46, 260 24 S 340 2, 400 24"/></svg>
     <div class="sp-tag">Wear your story</div>
   </div>
-  <div class="sp-skip">TAP TO CONTINUE</div>
+  <div class="sp-skip" id="spSkip">TAP TO OPEN DASHBOARD</div>
 </div>
+<script>setTimeout(function(){var e=document.getElementById("splash");if(e)e.style.display="none"},4400)</script>
 <aside><div class="brand-logo"><div class="logo-ink" role="img" aria-label="KHAYLA"></div><small>BUSINESS PULSE</small></div><div id="sideNav"></div></aside>
 <main>
   <header><div class="hrow">
@@ -362,8 +376,12 @@ body.light-mode #splash .sp-logo{background:linear-gradient(100deg,#C4B5FD,#7DD3
   </div></header>
   <div class="body">
     <div class="filters" id="filters">
-      <button data-d="0" class="on">All time</button><button data-d="7">Last 7 days</button><button data-d="14">Last 14 days</button>
+      <button data-d="0" class="on">All time</button><button data-d="1">Today</button><button data-d="7">Last 7 days</button><button data-d="14">Last 14 days</button><button data-m="this">This month</button><button data-m="last">Last month</button>
       <label>From <input type="date" id="from"></label><label>To <input type="date" id="to"></label>
+      <select id="fcat" aria-label="Product type"><option value="All">All types</option></select>
+      <select id="fprice" aria-label="Price"><option value="all">Any price</option><option value="lt1000">Under ₹1,000</option><option value="1to2">₹1,000 – ₹2,000</option><option value="gt2000">Above ₹2,000</option></select>
+      <select id="fmg" aria-label="Margin"><option value="all">Any margin</option><option value="low">Low margin (&lt;20%)</option><option value="high">High margin (40%+)</option><option value="loss">Loss / zero profit</option></select>
+      <button id="freset" class="reset">✕ Reset</button>
     </div>
     <div id="page"></div>
   </div>
@@ -371,13 +389,20 @@ body.light-mode #splash .sp-logo{background:linear-gradient(100deg,#C4B5FD,#7DD3
 <nav class="tabs" id="tabNav"></nav>
 
 <script>
-// Opening animation: runs once per page open, tap to skip
+// Opening animation: tap anywhere (or wait) to open the dashboard
 (function(){
   const sp=document.getElementById("splash");if(!sp)return;
   let gone=false;
-  const close=()=>{if(gone)return;gone=true;sp.classList.add("out");setTimeout(()=>sp.remove(),1000)};
-  sp.addEventListener("click",close);
-  setTimeout(close,3900);
+  const close=()=>{
+    if(gone)return;gone=true;
+    sp.style.pointerEvents="none";
+    sp.style.transition="opacity .35s ease";
+    sp.style.opacity="0";
+    setTimeout(()=>{sp.style.display="none";sp.remove()},400);
+  };
+  ["click","touchstart","pointerdown","keydown"].forEach(ev=>sp.addEventListener(ev,close,{passive:true}));
+  document.addEventListener("keydown",close);
+  setTimeout(close,3600);
 })();
 
 const SHEET_ID="18KJibHGn8-kxp_YsTu_9wbhTXNwTcvSeWQnWlEOhvgg";
@@ -426,6 +451,19 @@ async function loadCap(){ // the CAPITAL tab name may have a trailing space
   return[];
 }
 
+let FCAT="All",FPR="all",FMG="all",EF="All",PV="All",PS="All";
+function passF(r){
+  if(FCAT!=="All"&&r.cat!==FCAT)return false;
+  const p=r.rev/(r.qty||1);
+  if(FPR==="lt1000"&&!(p<1000))return false;
+  if(FPR==="1to2"&&!(p>=1000&&p<=2000))return false;
+  if(FPR==="gt2000"&&!(p>2000))return false;
+  const m=r.rev?r.profit/r.rev:0;
+  if(FMG==="low"&&!(m<.2))return false;
+  if(FMG==="high"&&!(m>=.4))return false;
+  if(FMG==="loss"&&!(r.profit<=0))return false;
+  return true;
+}
 let SALES=[],EXPS=[],PUR=[],CAP=[],BUY={},charts={},cur="overview";
 
 async function boot(){
@@ -448,6 +486,8 @@ async function boot(){
     PUR.filter(r=>r.code).forEach(r=>{const b=BUY[r.code]=BUY[r.code]||{qty:0,total:0,name:r.name};b.qty+=r.qty;b.total+=r.total});
     const ds=SALES.map(r=>r.date).sort();
     $("from").min=$("to").min=ds[0];$("from").max=$("to").max=ds[ds.length-1];
+    const cs=[...new Set(SALES.map(r=>r.cat))].sort();
+    $("fcat").innerHTML=`<option value="All">All types</option>`+cs.map(c=>`<option ${c===FCAT?"selected":""}>${c}</option>`).join("");
     $("status").textContent=`Synced ${new Date().toLocaleTimeString("en-IN")} · ${SALES.length} sales rows`;
     render();
   }catch(e){
@@ -461,6 +501,10 @@ function range(){
   const all=SALES.map(r=>r.date).sort(),max=all[all.length-1],min=all[0];
   let from=$("from").value||min,to=$("to").value||max;
   const on=document.querySelector("#filters button.on");
+  if(on&&on.dataset.m&&!$("from").value){
+    const y=+max.slice(0,4),m=+max.slice(5,7)-(on.dataset.m==="last"?1:0),ms=new Date(Date.UTC(y,m-1,1)),me=new Date(Date.UTC(y,m,0));
+    from=ISO(ms);to=on.dataset.m==="last"?ISO(me):max;
+  }
   if(on&&+on.dataset.d&&!$("from").value){
     const d=new Date(max+"T00:00");d.setDate(d.getDate()-(+on.dataset.d-1));
     from=d.toISOString().slice(0,10);
@@ -501,7 +545,7 @@ function stockRows(){
 }
 function D(){
   const [from,to]=range();
-  const s=SALES.filter(r=>r.date>=from&&r.date<=to),e=EXPS.filter(r=>!r.date||(r.date>=from&&r.date<=to));
+  const s=SALES.filter(r=>r.date>=from&&r.date<=to&&passF(r)),e=EXPS.filter(r=>!r.date||(r.date>=from&&r.date<=to));
   const rev=sum(s,r=>r.rev),cost=sum(s,r=>r.cost),pcs=sum(s,r=>r.qty),exp=sum(e,r=>r.amt),gross=rev-cost;
   const by={};
   s.forEach(r=>{const x=r.code||r.label;const o=by[x]=by[x]||{label:r.label,code:r.code,qty:0,rev:0,profit:0};o.qty+=r.qty;o.rev+=r.rev;o.profit+=r.profit});
@@ -542,34 +586,113 @@ function pOverview(d){
   daily("c1",d);topChart("c2",d);dn("c3",d.cat);
 }
 
+let SQ="",SC="All",SS="profit";
+const UT=s=>new Date(s+"T00:00:00Z"),ISO=x=>x.toISOString().slice(0,10);
+function prevData(){
+  const [f,t]=range(),n=Math.round((UT(t)-UT(f))/864e5)+1;
+  const pt=UT(f);pt.setUTCDate(pt.getUTCDate()-1);const pf=new Date(pt);pf.setUTCDate(pf.getUTCDate()-n+1);
+  const s=SALES.filter(r=>r.date>=ISO(pf)&&r.date<=ISO(pt)&&passF(r));
+  return{rev:sum(s,r=>r.rev),profit:sum(s,r=>r.profit),pcs:sum(s,r=>r.qty),has:s.length>0};
+}
+function dl(c,p,has){
+  if(!has||!p)return'<span class="dl">no earlier period</span>';
+  const v=(c-p)/Math.abs(p)*100;
+  return`<span class="dl ${v>=0?"up":"dn"}">${v>=0?"▲":"▼"} ${Math.abs(v).toFixed(0)}% vs previous period</span>`;
+}
+function forecast(d){
+  const y=d.days.slice(-14).map(x=>d.daySales[x]),n=y.length;
+  if(n<4)return null;
+  const mx=(n-1)/2,my=sum(y,v=>v)/n;
+  let nu=0,de=0;y.forEach((v,i)=>{nu+=(i-mx)*(v-my);de+=(i-mx)**2});
+  const sl=de?nu/de:0,out=[];
+  for(let i=1;i<=7;i++)out.push(Math.max(0,my+sl*(n-1+i-mx)));
+  return{vals:out,slope:sl,avg:my};
+}
 function pSales(d){
+  const pv=prevData(),fc=forecast(d);
   const wd=[0,0,0,0,0,0,0];d.s.forEach(r=>wd[new Date(r.date+"T00:00").getDay()]+=r.rev);
-  const recent=[...d.s].sort((a,b)=>b.date.localeCompare(a.date)).slice(0,25);
-  $("page").innerHTML=`<div class="kpis">`+K("Total sales",inr(d.rev),`${d.days.length} selling days`,"#2fd48f",1)+K("Profit on dresses",inr(d.gross),`${d.margin.toFixed(0)}% margin`,"#3df2a8")+
-    K("Pieces sold",d.pcs,"In this period","#46c2ff")+K("Average price",inr(d.rev/d.pcs),"Per piece","#f5b84a")+K("Profit per piece",inr(d.gross/d.pcs),"Before expenses","#9b8cff")+`</div>`+
-    `<div class="grid">`+C("Sales and profit each day","Bars show sales. The line shows profit.",CH("c1"),"wide")+
+  // monthly goal
+  const all=SALES.map(r=>r.date).sort(),last=all[all.length-1],ym=last.slice(0,7);
+  const monthRev=sum(SALES.filter(r=>r.date.startsWith(ym)),r=>r.rev);
+  let goal=0;try{goal=+localStorage.getItem("khayla-goal")||0}catch(e){}
+  const dim=new Date(+ym.slice(0,4),+ym.slice(5,7),0).getDate(),dleft=Math.max(0,dim-(+last.slice(8)));
+  const pct=goal?Math.min(100,monthRev/goal*100):0,need=goal&&dleft?Math.max(0,(goal-monthRev)/dleft):0;
+  const mname=new Date(ym+"-01T00:00").toLocaleDateString("en-IN",{month:"long"});
+  // pareto
+  const byP=[...d.prods].sort((a,b)=>b.profit-a.profit),tp=sum(byP,p=>Math.max(0,p.profit));
+  let run=0,n80=0;const cum=byP.map((p,i)=>{run+=Math.max(0,p.profit);if(!n80&&run/tp>=.8)n80=i+1;return run/tp*100});
+  // best weekday
+  const names=["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"],bi=wd.indexOf(Math.max(...wd));
+  const cats=["All",...Object.keys(d.cat)];
+  const smart=[
+    ["good","📈",`<b>Pareto:</b> ${n80} of ${byP.length} products bring 80% of your profit. Protect their stock and promote them first.`],
+    ["good","🗓️",`<b>Best weekday:</b> ${names[bi]} brings the most sales. Schedule new posts and offers before it.`]
+  ];
+  if(fc)smart.push([fc.slope>=0?"good":"warn",fc.slope>=0?"🚀":"🔻",`<b>Forecast:</b> expected ${inr(sum(fc.vals,v=>v))} sales in the next 7 selling days (${fc.slope>=0?"rising":"falling"} trend, about ${inr(Math.abs(fc.slope))} per day).`]);
+  $("page").innerHTML=`<div class="kpis">`+
+    K("Total sales",inr(d.rev),dl(d.rev,pv.rev,pv.has),"#2fd48f",1)+
+    K("Profit on dresses",inr(d.gross),dl(d.gross,pv.profit,pv.has),"#3df2a8")+
+    K("Pieces sold",d.pcs,dl(d.pcs,pv.pcs,pv.has),"#46c2ff")+
+    K("Average price",inr(d.rev/d.pcs),`${d.days.length} selling days`,"#f5b84a")+
+    K("Profit per piece",inr(d.gross/d.pcs),`${d.margin.toFixed(0)}% margin`,"#9b8cff")+`</div>`+
+    C(`${mname} sales goal`,"Set a target and track it. It is saved on this device.",
+      `<div class="goalrow"><label>Target ₹ <input type="number" id="goalIn" min="0" step="1000" value="${goal||""}" placeholder="e.g. 50000"></label><button class="btn" id="goalSave">Save goal</button></div>`+
+      (goal?`<div class="goalinfo"><b>${inr(monthRev)}</b> of ${inr(goal)} · ${pct.toFixed(0)}%</div><div class="progress-track big"><span style="width:${pct}%"></span></div><p class="hint" style="margin-top:8px">${monthRev>=goal?"🎉 Goal reached. Keep going.":`${dleft} days left. You need about <b>${inr(need)}</b> per day to reach it.`}</p>`:`<p class="hint">No goal set yet.</p>`))+
+    `<div class="gap">`+C("Smart insights","Worked out from your sales.",`<div class="tips">${smart.map(t=>`<div class="tip ${t[0]}"><i>${t[1]}</i><div>${t[2]}</div></div>`).join("")}</div>`)+`</div>`+
+    `<div class="grid">`+C("Sales trend and 7-day forecast","Bars are sales, solid line is the 7-day average, dashed line is the forecast.",CH("c1"),"wide")+
+    C("Growth so far","Running total of sales.",CH("c6"))+C("Pareto: profit by product","Line shows cumulative share of profit.",CH("c7"))+
     C("Top 8 products by profit","Best earners.",CH("c2"))+C("Sales by product type","Share of sales.",CH("c3"))+
     C("Best days of the week","Gold bar is the best day.",CH("c4"))+C("Pieces by product","Most sold first.",CH("c5"))+`</div>`+
-    C("All products","Sorted by profit.",prodTable(d))+
-    C("Latest 25 sales","Most recent first.",T([["Date"],["Product"],["Qty",1],["Price",1],["Profit",1]],recent.map(r=>[fmtDay(r.date),r.label,r.qty,inr(r.rev),inr(r.profit)])),"gap");
-  daily("c1",d);topChart("c2",d);dn("c3",d.cat);
+    C("All products","Search, filter by type and sort.",
+      `<div class="toolbar"><input id="sq" type="search" placeholder="Search product or code" value="${SQ}"><select id="sc">${cats.map(c=>`<option ${c===SC?"selected":""}>${c}</option>`).join("")}</select><select id="ss">${[["profit","Sort: profit"],["rev","Sort: sales"],["qty","Sort: pieces"],["mg","Sort: margin"]].map(o=>`<option value="${o[0]}" ${o[0]===SS?"selected":""}>${o[1]}</option>`).join("")}</select></div><div id="ptable"></div>`)+
+    C("Latest sales","Most recent first, with export.",`<div class="toolbar"><button class="btn primary" id="exp">⬇ Export CSV</button></div><div id="rtable"></div>`,"gap");
+  const dd=[...d.days];if(fc){const l=UT(dd[dd.length-1]);for(let i=1;i<=7;i++){const x=new Date(l);x.setUTCDate(x.getUTCDate()+i);dd.push(ISO(x))}}
+  const sv=d.days.map(x=>d.daySales[x]),pad=Array(fc?7:0).fill(null),ma=sv.map((_,i)=>{const w=sv.slice(Math.max(0,i-6),i+1);return sum(w,v=>v)/w.length});
+  const fl=fc?[...Array(sv.length-1).fill(null),sv[sv.length-1],...fc.vals]:[];
+  mk("c1",{data:{labels:dd.map(fmtDay),datasets:[
+    {type:"bar",label:"Sales",data:[...sv,...pad],backgroundColor:"#7C9BFF",borderRadius:4,order:3},
+    {type:"line",label:"7-day average",data:[...ma,...pad],borderColor:"#FFC979",tension:.35,pointRadius:0,borderWidth:2.5,order:1},
+    ...(fc?[{type:"line",label:"Forecast",data:fl,borderColor:"#4DE2C5",borderDash:[6,5],tension:.3,pointRadius:3,borderWidth:2.5,order:2}]:[])]},
+    options:{scales:{y:{grid:gl(),ticks:{callback:k}},x:{grid:{display:false}}},plugins:{tooltip:{callbacks:{label:c=>`${c.dataset.label}: ${inr(c.raw)}`}}}}});
+  let cr=0;mk("c6",{type:"line",data:{labels:d.days.map(fmtDay),datasets:[{data:d.days.map(x=>cr+=d.daySales[x]),borderColor:"#A78BFA",backgroundColor:"rgba(167,139,250,.18)",fill:true,tension:.3,pointRadius:0,borderWidth:2.5}]},options:{plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>inr(c.raw)}}},scales:{y:{grid:gl(),ticks:{callback:k}},x:{grid:{display:false}}}}});
+  mk("c7",{data:{labels:byP.map((_,i)=>i+1),datasets:[{type:"bar",label:"Profit",data:byP.map(p=>p.profit),backgroundColor:"#A78BFA",borderRadius:3,yAxisID:"y"},{type:"line",label:"Cumulative %",data:cum,borderColor:"#FFC979",pointRadius:0,borderWidth:2.5,yAxisID:"y2"}]},options:{scales:{y:{grid:gl(),ticks:{callback:k}},y2:{position:"right",min:0,max:100,grid:{display:false},ticks:{callback:v=>v+"%"}},x:{grid:{display:false},title:{display:true,text:"Product rank"}}},plugins:{legend:{display:false}}}});
+  topChart("c2",d);dn("c3",d.cat);
   const mx=Math.max(...wd);
-  mk("c4",{type:"bar",data:{labels:["Sun","Mon","Tue","Wed","Thu","Fri","Sat"],datasets:[{data:wd,backgroundColor:wd.map(v=>v===mx?"#f5b84a":"#1f9d6b"),borderRadius:4}]},options:{plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>inr(c.raw)}}},scales:{y:{grid:gl(),ticks:{callback:k}},x:{grid:{display:false}}}}});
+  mk("c4",{type:"bar",data:{labels:["Sun","Mon","Tue","Wed","Thu","Fri","Sat"],datasets:[{data:wd,backgroundColor:wd.map(v=>v===mx?"#f5b84a":"#7C9BFF"),borderRadius:4}]},options:{plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>inr(c.raw)}}},scales:{y:{grid:gl(),ticks:{callback:k}},x:{grid:{display:false}}}}});
   const q=[...d.prods].sort((a,b)=>b.qty-a.qty).slice(0,8);hb("c5",q.map(p=>p.label.slice(0,24)),q.map(p=>p.qty),"#46c2ff",n=>n+" pcs");
+  const catOf=p=>category(p.label);
+  function drawP(){
+    const key={profit:p=>p.profit,rev:p=>p.rev,qty:p=>p.qty,mg:p=>p.rev?p.profit/p.rev:0}[SS];
+    const list=d.prods.filter(p=>(SC==="All"||catOf(p)===SC)&&(p.label+" "+p.code).toLowerCase().includes(SQ.toLowerCase())).sort((a,b)=>key(b)-key(a));
+    $("ptable").innerHTML=list.length?T([["Product"],["Pieces",1],["Sales",1],["Profit",1],["Margin",1]],list.map(p=>[p.label+(p.code?` <span class="code">${p.code.toUpperCase()}</span>`:""),p.qty,inr(p.rev),`<b>${inr(p.profit)}</b>`,(p.rev?p.profit/p.rev*100:0).toFixed(0)+"%"])):`<p class="hint">No products match.</p>`;
+  }
+  const recent=[...d.s].sort((a,b)=>b.date.localeCompare(a.date));
+  $("rtable").innerHTML=T([["Date"],["Product"],["Qty",1],["Price",1],["Profit",1]],recent.slice(0,25).map(r=>[fmtDay(r.date),r.label,r.qty,inr(r.rev),inr(r.profit)]));
+  drawP();
+  $("sq").oninput=e=>{SQ=e.target.value;drawP()};$("sc").onchange=e=>{SC=e.target.value;drawP()};$("ss").onchange=e=>{SS=e.target.value;drawP()};
+  $("goalSave").onclick=()=>{try{localStorage.setItem("khayla-goal",String(+$("goalIn").value||0))}catch(e){}render()};
+  $("exp").onclick=()=>{
+    const rows=[["Date","Product","Code","Qty","Sales","Cost","Profit"],...recent.map(r=>[r.date,r.label,r.code,r.qty,r.rev,r.cost,r.profit])];
+    const csv=rows.map(r=>r.map(c=>`"${String(c).replace(/"/g,'""')}"`).join(",")).join("\n");
+    const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([csv],{type:"text/csv"}));a.download="khayla-sales.csv";a.click();
+  };
 }
 
 function pPurchase(){
-  const st=stockRows(),tot=sum(PUR,r=>r.total),pcs=sum(PUR,r=>r.qty),val=sum(st.filter(x=>x.left>0),x=>x.left*x.unit);
-  const byV=group(PUR,r=>r.vendor,r=>r.total),pv=group(PUR,r=>r.vendor,r=>r.qty);
+  const vends=["All",...new Set(PUR.map(r=>r.vendor).filter(Boolean))],P=PV==="All"?PUR:PUR.filter(r=>r.vendor===PV);
+  const st=stockRows(),tot=sum(P,r=>r.total),pcs=sum(P,r=>r.qty),val=sum(st.filter(x=>x.left>0),x=>x.left*x.unit);
+  const byV=group(P,r=>r.vendor,r=>r.total),pv=group(P,r=>r.vendor,r=>r.qty);
+  const SO=["All","Low","Sold out","In stock","Check sheet"],sk=r=>r.left<0?"Check sheet":r.left===0?"Sold out":r.left<=3?"Low":"In stock",stF=PS==="All"?st:st.filter(r=>sk(r)===PS);
   const stt=r=>r.left<0?tag("Check sheet","t-chk"):r.left===0?tag("Sold out","t-out"):r.left<=3?tag("Low","t-low"):tag("In stock","t-ok");
-  const bp=Object.entries(group(PUR.filter(r=>r.code),r=>r.name,r=>r.qty)).sort((a,b)=>b[1]-a[1]).slice(0,8);
-  $("page").innerHTML=`<div class="kpis">`+K("Total purchases",inr(tot),"All suppliers","#46c2ff",1)+K("Pieces bought",pcs,"All suppliers","#2fd48f")+
+  const bp=Object.entries(group(P.filter(r=>r.code),r=>r.name,r=>r.qty)).sort((a,b)=>b[1]-a[1]).slice(0,8);
+  $("page").innerHTML=`<div class="toolbar"><select id="pv" aria-label="Supplier">${vends.map(x=>`<option value="${x}" ${x===PV?"selected":""}>${x==="All"?"All suppliers":x}</option>`).join("")}</select><select id="ps" aria-label="Stock status">${SO.map(x=>`<option value="${x}" ${x===PS?"selected":""}>${x==="All"?"All stock status":x}</option>`).join("")}</select></div><div class="kpis">`+K("Total purchases",inr(tot),"All suppliers","#46c2ff",1)+K("Pieces bought",pcs,"All suppliers","#2fd48f")+
     K("Stock on shelf",inr(val),"At buying price","#f5b84a")+K("Suppliers",Object.keys(byV).length,"Mumbai, Calicut, Palakkad…","#3df2a8")+`</div>`+
     `<div class="grid">`+C("Spend by supplier","Where your buying money went.",CH("c1"))+C("Most bought products","Pieces bought, coded products only.",CH("c2"))+`</div>`+
     C("Suppliers","Total spend and pieces.",T([["Supplier"],["Pieces",1],["Spend",1]],Object.keys(byV).sort((a,b)=>byV[b]-byV[a]).map(v=>[v,pv[v],inr(byV[v])])))+
-    C("Stock check","Bought minus sold for every product code. Least stock first.",T([["Product"],["Bought",1],["Sold",1],["Left",1],["Sold so far"],["Status"]],st.map(r=>[`${r.name} <span class="code">${r.c.toUpperCase()}</span>`,r.bought,r.sold,`<b>${r.left}</b>`,`<div class="bar"><b style="width:${r.bought?Math.min(100,r.sold/r.bought*100):0}%"></b></div>`,stt(r)])),"gap")+
-    C("All purchases","Dates are shown as typed in your sheet.",T([["Date"],["Supplier"],["Product"],["Qty",1],["Total",1]],PUR.map(r=>[r.date,r.vendor,r.name+(r.code?` <span class="code">${r.code.toUpperCase()}</span>`:""),r.qty,inr(r.total)])),"gap");
+    C("Stock check","Bought minus sold for every product code. Least stock first.",T([["Product"],["Bought",1],["Sold",1],["Left",1],["Sold so far"],["Status"]],stF.map(r=>[`${r.name} <span class="code">${r.c.toUpperCase()}</span>`,r.bought,r.sold,`<b>${r.left}</b>`,`<div class="bar"><b style="width:${r.bought?Math.min(100,r.sold/r.bought*100):0}%"></b></div>`,stt(r)])),"gap")+
+    C("All purchases","Dates are shown as typed in your sheet.",T([["Date"],["Supplier"],["Product"],["Qty",1],["Total",1]],P.map(r=>[r.date,r.vendor,r.name+(r.code?` <span class="code">${r.code.toUpperCase()}</span>`:""),r.qty,inr(r.total)])),"gap");
   dn("c1",byV);hb("c2",bp.map(x=>x[0].slice(0,24)),bp.map(x=>x[1]),"#2fd48f",n=>n+" pcs");
+  $("pv").onchange=e=>{PV=e.target.value;render()};$("ps").onchange=e=>{PS=e.target.value;render()};
 }
 
 function pCapital(d){
@@ -588,15 +711,18 @@ function pCapital(d){
 }
 
 function pExpense(d){
+  const types=["All",...Object.keys(d.expBy).sort()];
+  if(EF!=="All"){const e=d.e.filter(r=>r.type===EF);d=Object.assign({},d,{e,exp:sum(e,r=>r.amt),expBy:group(e,r=>r.type,r=>r.amt)})}
   const sumT=re=>sum(d.e.filter(r=>re.test(r.type)),r=>r.amt);
   const dayE=group(d.e.filter(r=>r.date),r=>r.date,r=>r.amt),dd=Object.keys(dayE).sort();
   const rows=[...d.e].sort((a,b)=>(b.date||"").localeCompare(a.date||""));
-  $("page").innerHTML=`<div class="kpis">`+K("Total expenses",inr(d.exp),`${d.rev?(d.exp/d.rev*100).toFixed(0):0}% of sales`,"#ff6b8a",1)+
+  $("page").innerHTML=`<div class="toolbar"><select id="ef" aria-label="Expense type">${types.map(x=>`<option value="${x}" ${x===EF?"selected":""}>${x==="All"?"All expense types":x}</option>`).join("")}</select></div><div class="kpis">`+K("Total expenses",inr(d.exp),`${d.rev?(d.exp/d.rev*100).toFixed(0):0}% of sales`,"#ff6b8a",1)+
     K("Delivery and post",inr(sumT(/dtdc|post|parcel/i)),"DTDC, post, parcel","#46c2ff")+K("Models",inr(sumT(/model/i)),"Model charges","#2fd48f")+
     K("Ads and other",inr(sumT(/^other/i)),"Fuel, ads, packing, giveaway","#f5b84a")+`</div>`+
     `<div class="grid">`+C("Where the money goes","Each type of expense.",CH("c1"))+C("Expenses each day","Tall bars are heavy spending days.",CH("c2"))+`</div>`+
     C("All expenses","Most recent first.",T([["Date"],["Type"],["Amount",1]],rows.map(r=>[r.date?fmtDay(r.date):"",r.raw,inr(r.amt)])));
   dn("c1",d.expBy);vb("c2",dd.map(fmtDay),dd.map(x=>dayE[x]),"#ff6b8a");
+  $("ef").onchange=e=>{EF=e.target.value;render()};
 }
 
 
@@ -677,7 +803,7 @@ const ICONS={
 };
 const PAGES={
   overview:{t:"Overview",f:pOverview,filter:1,eyebrow:"BUSINESS SNAPSHOT",lead:"Your business at a glance — sales, profit, stock and the next best actions."},
-  sales:{t:"Sales",f:pSales,filter:1,eyebrow:"REVENUE & PERFORMANCE",lead:"Explore sales trends, product performance and the revenue driving your business."},
+  sales:{t:"Sales",f:pSales,filter:1,eyebrow:"REVENUE & PERFORMANCE",lead:"Compare periods, track your goal, see the forecast and find your best products."},
   purchase:{t:"Purchase",f:pPurchase,eyebrow:"PROCUREMENT & INVENTORY",lead:"Track supplier spending, purchase volume and the stock available to sell."},
   capital:{t:"Capital",f:pCapital,eyebrow:"PARTNER CAPITAL & POSITION",lead:"Understand partner contributions, profit shares and where business capital stands."},
   expense:{t:"Expense",f:pExpense,filter:1,eyebrow:"COST CONTROL & SPENDING",lead:"See where money goes, identify spending patterns and keep costs under control."},
@@ -725,7 +851,7 @@ function render(){
   if(!SALES.length)return;
   Object.values(charts).forEach(c=>c.destroy());charts={};
   const d=D();
-  if(!d.s.length){$("page").innerHTML=`<div class="card err">No sales in these dates. Try "All time".</div>`;return}
+  if(!d.s.length){$("page").innerHTML=`<div class="card err">No sales match these filters. Try "All time" or tap Reset.</div>`;return}
   PAGES[cur].f(d);
   scrollTo(0,0);
 }
@@ -735,6 +861,8 @@ document.querySelectorAll("#filters button").forEach(b=>b.onclick=()=>{
   b.classList.add("on");$("from").value="";$("to").value="";render();
 });
 ["from","to"].forEach(i=>$(i).onchange=()=>{document.querySelectorAll("#filters button").forEach(x=>x.classList.remove("on"));render()});
+$("fcat").onchange=e=>{FCAT=e.target.value;render()};$("fprice").onchange=e=>{FPR=e.target.value;render()};$("fmg").onchange=e=>{FMG=e.target.value;render()};
+$("freset").onclick=()=>{FCAT="All";FPR="all";FMG="all";$("fcat").value="All";$("fprice").value="all";$("fmg").value="all";document.querySelector('#filters button[data-d="0"]').click()};
 $("refresh").onclick=boot;
 render();boot();
 </script>
